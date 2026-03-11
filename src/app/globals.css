@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
+  --garden-green: #1B4D2E;
+  --garden-yellow: #D4E600;
+}
+
+.dark {
+  --background: #030712;
+  --foreground: #F9FAFB;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: var(--font-geist-sans), sans-serif;
+  }
+
+  ::selection {
+    background-color: #D4E600;
+    color: #0A0A0A;
+  }
+
+  :focus-visible {
+    outline: 2px solid #D4E600;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  /* Masonry grid */
+  .masonry-grid {
+    columns: 1;
+    column-gap: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .masonry-grid {
+      columns: 2;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .masonry-grid {
+      columns: 3;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .masonry-grid {
+      columns: 4;
+    }
+  }
+
+  .masonry-item {
+    break-inside: avoid;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #E5EDE8;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #B8CCBF;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+  }
+
+  /* Tag component */
+  .tag {
+    @apply font-mono text-xs px-2 py-0.5 rounded-tag border border-garden-border dark:border-gray-600 text-garden-text-muted dark:text-gray-300 bg-garden-green-light dark:bg-gray-700 transition-colors duration-200;
+  }
+
+  .tag:hover {
+    @apply border-garden-green dark:border-gray-400 text-garden-green dark:text-white;
+  }
+
+  /* Garden button */
+  .btn-primary {
+    @apply bg-garden-yellow text-garden-black font-sans font-bold px-5 py-2.5 rounded-card transition-all duration-200 hover:bg-garden-yellow-dim hover:shadow-md active:scale-[0.98] focus-visible:outline-garden-yellow;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-garden-black dark:text-gray-200 font-sans font-normal px-5 py-2.5 rounded-card border border-garden-border dark:border-gray-600 transition-all duration-200 hover:bg-garden-green-light dark:hover:bg-gray-700 hover:border-garden-green dark:hover:border-gray-500 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-garden-text-muted dark:text-gray-400 font-sans font-normal px-3 py-2 rounded-card transition-all duration-200 hover:bg-garden-green-muted dark:hover:bg-gray-700 hover:text-garden-green dark:hover:text-white;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full bg-white dark:bg-gray-800 border border-garden-border dark:border-gray-600 rounded-card px-4 py-2.5 text-garden-black dark:text-white placeholder:text-garden-text-muted dark:placeholder:text-white/40 font-sans text-sm transition-all duration-200 focus:outline-none focus:border-garden-green dark:focus:border-garden-yellow focus:ring-1 focus:ring-garden-green/20 dark:focus:ring-garden-yellow/20;
+  }
+
+  /* Card */
+  .inspiration-card {
+    @apply bg-white dark:bg-gray-800 border border-garden-border dark:border-gray-700 rounded-card overflow-hidden shadow-card dark:shadow-none transition-all duration-[250ms] ease-in-out cursor-pointer hover:shadow-card-hover dark:hover:bg-gray-700 hover:-translate-y-0.5;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ── Toast animations ───────────────────────────────────────────────────────── */
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 24px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip3 install pdfplumber -q)",
+      "Bash(python3 -c \":*)",
+      "Bash(npx create-next-app@14 . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(npx create-next-app@14 . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --yes)",
+      "Bash(sudo chown -R marlay.studio /Users/marlay.studio/.npm/)",
+      "Bash(npm config set cache /tmp/npm-cache-garden)",
+      "Bash(npx create-next-app@14 /tmp/the-garden --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --yes)",
+      "Bash(npm install --cache /tmp/npm-cache-garden)",
+      "Bash(npm install --cache /tmp/npm-cache-garden @supabase/supabase-js @supabase/ssr)",
+      "Bash(npm install --cache /tmp/npm-cache-garden @tabler/icons-react)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(node /Users/marlay.studio/Desktop/ARCT/GARDEN/MVP/node_modules/typescript/bin/tsc --noEmit -p /Users/marlay.studio/Desktop/ARCT/GARDEN/MVP/tsconfig.json)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install --cache /tmp/npm-cache-garden cheerio)",
+      "Bash(node node_modules/.bin/tsc --noEmit)",
+      "Bash(python3:*)"
+    ]
+  }
+}
