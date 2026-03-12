@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { Inspiration, InspirationKind } from "@/lib/types";
 import { InspirationDetail } from "@/components/inspiration/InspirationDetail";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useDashboard } from "@/lib/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/lib/contexts/ToastContext";
@@ -191,14 +192,11 @@ export function JournalClient({ initialInspirations }: JournalClientProps) {
 
   if (totalNonArchived === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <span className="text-5xl mb-5 opacity-50">🌱</span>
-        <p className="font-sans text-base font-light text-garden-text-muted dark:text-gray-400 leading-relaxed max-w-xs">
-          Ton jardin n&apos;a pas encore de mémoire.
-          <br />
-          <span className="italic">Plante ta première graine.</span>
-        </p>
-      </div>
+      <EmptyState
+        icon="📓"
+        title="Ton jardin n'a pas encore de mémoire"
+        subtitle="Chaque graine plantée laisse une trace dans le temps"
+      />
     );
   }
 
@@ -264,12 +262,11 @@ export function JournalClient({ initialInspirations }: JournalClientProps) {
 
         {/* ── Empty filtered state ─────────────────────────────────────────── */}
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <span className="text-3xl mb-3 opacity-40">🔍</span>
-            <p className="font-mono text-sm text-garden-text-muted dark:text-gray-400">
-              Aucune inspiration ne correspond à ces filtres
-            </p>
-          </div>
+          <EmptyState
+            icon="🔍"
+            title="Aucune graine trouvée"
+            subtitle="Essaie avec d'autres filtres ou explore une autre période"
+          />
         ) : (
           /* ── Timeline ───────────────────────────────────────────────────── */
           <div className="relative">

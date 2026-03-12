@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
 import type { Inspiration } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -38,6 +38,12 @@ export function InspirationDetail({
   const [tags, setTags] = useState<string[]>(inspiration.tags);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // ── Share state ────────────────────────────────────────────────
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [copyDone, setCopyDone] = useState(false);
+  const shareLinkRef = useRef<HTMLInputElement>(null);
 
   const toast = useToast();
 
@@ -105,6 +111,59 @@ export function InspirationDetail({
 
   const handleDelete = async () => {
     onDelete(inspiration.id);
+  };
+
+  const shareUrl = inspiration.share_token
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${inspiration.share_token}`
+    : null;
+
+  const handleShare = async () => {
+    if (inspiration.is_shared && inspiration.share_token) {
+      setShareOpen(true);
+      return;
+    }
+    setShareLoading(true);
+    const supabase = createClient();
+    // Generate a random token server-side via a DB function, or generate it client-side
+    const token = crypto.randomUUID().replace(/-/g, "");
+    const { data, error } = await supabase
+      .from("inspirations")
+      .update({ is_shared: true, share_token: token })
+      .eq("id", inspiration.id)
+      .select()
+      .single();
+    setShareLoading(false);
+    if (data) {
+      onUpdate(data as Inspiration);
+      setShareOpen(true);
+    } else if (error) {
+      toast.error("Impossible d'activer le partage");
+    }
+  };
+
+  const handleDisableShare = async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("inspirations")
+      .update({ is_shared: false })
+      .eq("id", inspiration.id)
+      .select()
+      .single();
+    if (data) {
+      onUpdate(data as Inspiration);
+      setShareOpen(false);
+      toast.success("Partage désactivé");
+    } else if (error) {
+      toast.error("Impossible de désactiver le partage");
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 2000);
+    });
   };
 
   const handleArchive = async () => {
@@ -363,6 +422,41 @@ export function InspirationDetail({
                   <p className="font-mono text-[10px] text-garden-text-muted dark:text-white/40">
                     Planté le {formatDate(inspiration.created_at)}
                   </p>
+
+                  {/* Share panel */}
+                  {shareOpen && inspiration.share_token && (
+                    <div className="mt-2 p-4 bg-garden-green-muted dark:bg-white/5 rounded-card animate-fade-in flex flex-col gap-3">
+                      <p className="font-mono text-[10px] text-garden-text-muted dark:text-white/50 uppercase tracking-widest">
+                        Lien de partage
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={shareLinkRef}
+                          readOnly
+                          value={shareUrl ?? ""}
+                          className="input-base text-xs flex-1 select-all cursor-pointer"
+                          onClick={(e) => (e.target as HTMLInputElement).select()}
+                        />
+                        <button
+                          onClick={handleCopyLink}
+                          className={`btn-primary shrink-0 text-xs transition-all ${copyDone ? "!bg-garden-yellow !text-garden-black" : ""}`}
+                        >
+                          {copyDone ? "Copié ✓" : "Copier"}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="font-sans font-light text-[11px] text-garden-text-muted dark:text-white/40 leading-relaxed">
+                          Cette graine est visible par toute personne ayant le lien.
+                        </p>
+                        <button
+                          onClick={handleDisableShare}
+                          className="font-mono text-[10px] text-red-400 hover:text-red-600 hover:underline shrink-0 ml-3 transition-colors"
+                        >
+                          Désactiver
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -387,6 +481,14 @@ export function InspirationDetail({
                 className="btn-ghost text-sm"
               >
                 ✎ Modifier
+              </button>
+              <button
+                onClick={handleShare}
+                disabled={shareLoading}
+                className={`btn-ghost text-sm transition-all ${inspiration.is_shared ? "text-garden-green" : ""}`}
+                title="Partager cette inspiration"
+              >
+                {shareLoading ? "…" : "🔗 Partager"}
               </button>
             </div>
 

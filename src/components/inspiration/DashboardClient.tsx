@@ -1,16 +1,30 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import type { Inspiration, FilterKind, SortKind } from "@/lib/types";
 import { useDashboard } from "@/lib/contexts/DashboardContext";
 import { useToast } from "@/lib/contexts/ToastContext";
-import { InspirationCard } from "./InspirationCard";
+import { SortableInspirationCard, DragOverlayCard } from "./SortableInspirationCard";
 import { InspirationDetail } from "./InspirationDetail";
 import { AddInspirationModal } from "./AddInspirationModal";
 import { SearchBar } from "./SearchBar";
 import { FilterBar } from "./FilterBar";
 import { SortDropdown } from "./SortDropdown";
 import { createClient } from "@/lib/supabase/client";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { extractDomain } from "@/lib/utils";
+import Fuse from "fuse.js";
 
 interface DashboardClientProps {
   initialInspirations: Inspiration[];
@@ -22,11 +36,103 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
 
   const [inspirations, setInspirations] = useState<Inspiration[]>(initialInspirations);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterKind>("all");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [sortBy, setSortBy] = useState<SortKind>("recent");
+
+  // ── Drag & drop ────────────────────────────────────────────────
+  // Custom position order: IDs sorted by their `position` value
+  const [orderedIds, setOrderedIds] = useState<string[]>(() =>
+    [...initialInspirations]
+      .sort((a, b) => a.position - b.position)
+      .map((i) => i.id)
+  );
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Mobile detection (drag disabled on sm breakpoint)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Keep orderedIds in sync when inspirations are added or deleted
+  useEffect(() => {
+    setOrderedIds((prev) => {
+      const existingSet = new Set(inspirations.map((i) => i.id));
+      // New items (not yet in orderedIds) go to the front sorted by created_at desc
+      const newIds = inspirations
+        .filter((i) => !prev.includes(i.id))
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+        .map((i) => i.id);
+      return [...newIds, ...prev.filter((id) => existingSet.has(id))];
+    });
+  }, [inspirations]);
+
+  // Debounced position save (500ms after last drag)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savePositions = useCallback((ids: string[]) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      const supabase = createClient();
+      await Promise.all(
+        ids.map((id, index) =>
+          supabase.from("inspirations").update({ position: index }).eq("id", id)
+        )
+      );
+    }, 500);
+  }, []);
+
+  // dnd-kit sensors — require 8px movement before activating to preserve click behaviour
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  // Debounce query → debouncedQuery (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // Fuse.js index — rebuilt when inspirations change
+  const fuse = useMemo(
+    () =>
+      new Fuse(
+        inspirations.map((i) => ({
+          ...i,
+          _domain: extractDomain(i.source_url ?? ""),
+        })),
+        {
+          keys: [
+            { name: "title", weight: 3 },
+            { name: "notes", weight: 2 },
+            { name: "tags", weight: 2 },
+            { name: "_domain", weight: 1 },
+            { name: "content_url", weight: 0.5 },
+          ],
+          threshold: 0.35,
+          ignoreLocation: true,
+          minMatchCharLength: 2,
+          includeScore: true,
+        }
+      ),
+    [inspirations]
+  );
+
+  // Set of IDs matching the fuzzy search (null = no active search)
+  const fuseMatchIds = useMemo<Set<string> | null>(() => {
+    if (!debouncedQuery.trim()) return null;
+    return new Set(fuse.search(debouncedQuery).map((r) => r.item.id));
+  }, [debouncedQuery, fuse]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,14 +178,9 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
       list = list.filter((i) => i.type === typeFilter);
     }
 
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(
-        (i) =>
-          i.title?.toLowerCase().includes(q) ||
-          i.notes?.toLowerCase().includes(q) ||
-          i.tags.some((t) => t.toLowerCase().includes(q))
-      );
+    // Fuzzy search via Fuse.js (applied after other filters)
+    if (fuseMatchIds !== null) {
+      list = list.filter((i) => fuseMatchIds.has(i.id));
     }
 
     if (activeTagFilter) {
@@ -112,7 +213,30 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
           return byDate(a, b);
       }
     });
-  }, [inspirations, selectedGardenId, activeView, typeFilter, query, activeTagFilter, sortBy]);
+  }, [inspirations, selectedGardenId, activeView, typeFilter, fuseMatchIds, activeTagFilter, sortBy]);
+
+  // Drag is possible only in the unfiltered, unsearched view, on desktop
+  const isDraggable = useMemo(
+    () =>
+      !debouncedQuery.trim() &&
+      typeFilter === "all" &&
+      !activeTagFilter &&
+      !isMobile &&
+      activeView !== "archives" &&
+      activeView !== "favorites",
+    [debouncedQuery, typeFilter, activeTagFilter, isMobile, activeView]
+  );
+
+  // When drag is active, override the sort order with orderedIds
+  const displayList = useMemo(() => {
+    if (!isDraggable) return filtered;
+    const filteredSet = new Set(filtered.map((i) => i.id));
+    const inspirationMap = new Map(inspirations.map((i) => [i.id, i]));
+    return orderedIds
+      .filter((id) => filteredSet.has(id))
+      .map((id) => inspirationMap.get(id)!)
+      .filter(Boolean);
+  }, [isDraggable, orderedIds, filtered, inspirations]);
 
   const selectedInspiration = useMemo(
     () => inspirations.find((i) => i.id === selectedId) ?? null,
@@ -152,6 +276,18 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
       : base.length;
   }, [inspirations, activeView, selectedGardenId]);
 
+  // Determine which empty state to show
+  type EmptyKind = "first-use" | "garden" | "search" | "filter" | "favorites" | "archives";
+  const emptyKind = useMemo<EmptyKind | null>(() => {
+    if (filtered.length > 0) return null;
+    if (debouncedQuery.trim()) return "search";
+    if (typeFilter !== "all" || activeTagFilter) return "filter";
+    if (activeView === "favorites") return "favorites";
+    if (activeView === "archives") return "archives";
+    if (selectedGardenId !== null) return "garden";
+    return "first-use";
+  }, [filtered.length, debouncedQuery, typeFilter, activeTagFilter, activeView, selectedGardenId]);
+
   // ── Handlers ──────────────────────────────────────────────
   const handleAdd = useCallback((inspiration: Inspiration) => {
     setInspirations((prev) => [inspiration, ...prev]);
@@ -176,6 +312,27 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
     setSelectedId(null);
     toast.success("Inspiration supprimée");
   }, [toast]);
+
+  // ── Drag handlers ─────────────────────────────────────────────
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveId(null);
+      if (!over || active.id === over.id) return;
+      setOrderedIds((prev) => {
+        const oldIndex = prev.indexOf(active.id as string);
+        const newIndex = prev.indexOf(over.id as string);
+        const newOrder = arrayMove(prev, oldIndex, newIndex);
+        savePositions(newOrder);
+        return newOrder;
+      });
+    },
+    [savePositions]
+  );
 
   // Toggle active tag filter (click same tag again to clear)
   const handleTagClick = useCallback((tag: string) => {
@@ -212,13 +369,23 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
               {pageTitle}
             </h1>
             <p className="font-mono text-xs text-garden-text-muted dark:text-white/50">
-              {filtered.length !== totalCount
-                ? `${filtered.length} / ${totalCount}`
-                : totalCount}{" "}
-              inspiration{totalCount !== 1 ? "s" : ""}{" "}
-              {activeView === "archives"
-                ? `archivée${totalCount !== 1 ? "s" : ""}`
-                : `cultivée${totalCount !== 1 ? "s" : ""}`}
+              {debouncedQuery.trim() ? (
+                <>
+                  {filtered.length}{" "}
+                  inspiration{filtered.length !== 1 ? "s" : ""}{" "}
+                  trouvée{filtered.length !== 1 ? "s" : ""}
+                </>
+              ) : (
+                <>
+                  {filtered.length !== totalCount
+                    ? `${filtered.length} / ${totalCount}`
+                    : totalCount}{" "}
+                  inspiration{totalCount !== 1 ? "s" : ""}{" "}
+                  {activeView === "archives"
+                    ? `archivée${totalCount !== 1 ? "s" : ""}`
+                    : `cultivée${totalCount !== 1 ? "s" : ""}`}
+                </>
+              )}
             </p>
           </div>
           {activeView !== "archives" && (
@@ -265,30 +432,53 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
       </div>
 
       {/* ─── Grid or Empty ─── */}
-      {filtered.length === 0 ? (
-        <EmptyState
-          hasInspirations={totalCount > 0}
-          isGardenView={selectedGardenId !== null}
-          isArchiveView={activeView === "archives"}
-          onAdd={() => setShowAdd(true)}
-        />
+      {emptyKind !== null ? (
+        <DashboardEmptyState kind={emptyKind} onAdd={() => setShowAdd(true)} />
       ) : (
-        <div className="masonry-grid">
-          {filtered.map((inspiration) => (
-            <div
-              key={inspiration.id}
-              className={`masonry-item${activeView === "archives" ? " opacity-[0.82]" : ""}`}
-            >
-              <InspirationCard
-                inspiration={inspiration}
-                onClick={() => setSelectedId(inspiration.id)}
-                onFavorite={(val) => handleFavorite(inspiration.id, val)}
-                onTagClick={handleTagClick}
-                activeTagFilter={activeTagFilter}
-              />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={displayList.map((i) => i.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="masonry-grid">
+              {displayList.map((inspiration) => (
+                <div key={inspiration.id} className="masonry-item">
+                  <SortableInspirationCard
+                    inspiration={inspiration}
+                    isDraggable={isDraggable}
+                    isArchived={activeView === "archives"}
+                    onClick={() => setSelectedId(inspiration.id)}
+                    onFavorite={(val) => handleFavorite(inspiration.id, val)}
+                    onTagClick={handleTagClick}
+                    activeTagFilter={activeTagFilter}
+                    highlightQuery={debouncedQuery}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+
+          <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
+            {activeId ? (() => {
+              const insp = inspirations.find((i) => i.id === activeId);
+              return insp ? (
+                <DragOverlayCard
+                  inspiration={insp}
+                  onClick={() => {}}
+                  onFavorite={() => {}}
+                  onTagClick={handleTagClick}
+                  activeTagFilter={activeTagFilter}
+                  highlightQuery={debouncedQuery}
+                />
+              ) : null;
+            })() : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* ── Mobile FAB ── */}
@@ -327,49 +517,51 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
   );
 }
 
-function EmptyState({
-  hasInspirations,
-  isGardenView,
-  isArchiveView,
-  onAdd,
-}: {
-  hasInspirations: boolean;
-  isGardenView: boolean;
-  isArchiveView: boolean;
-  onAdd: () => void;
-}) {
-  const title = hasInspirations
-    ? "Aucun résultat"
-    : isArchiveView
-    ? "Aucune archive"
-    : isGardenView
-    ? "Ce jardin est vide"
-    : "Ton jardin t'attend";
+type EmptyKind = "first-use" | "garden" | "search" | "filter" | "favorites" | "archives";
 
-  const subtitle = hasInspirations
-    ? "Essaie de modifier ta recherche ou tes filtres."
-    : isArchiveView
-    ? "Les inspirations archivées apparaîtront ici."
-    : isGardenView
-    ? "Plante ta première graine dans ce jardin — une image, un texte, un lien, une vidéo."
-    : "Plante ta première graine — une image, un texte, un lien, une vidéo.";
+const EMPTY_CONFIGS: Record<EmptyKind, { icon: string; title: string; subtitle: string; showCta?: boolean }> = {
+  "first-use": {
+    icon: "🌱",
+    title: "Ton jardin t'attend",
+    subtitle: "Plante ta première graine pour commencer à cultiver tes inspirations",
+    showCta: true,
+  },
+  "garden": {
+    icon: "🌿",
+    title: "Ce jardin est encore vide",
+    subtitle: "Les graines que tu plantes ici prendront racine avec le temps",
+    showCta: true,
+  },
+  "search": {
+    icon: "🔍",
+    title: "Aucune graine trouvée",
+    subtitle: "Essaie avec d'autres mots ou explore ton jardin autrement",
+  },
+  "filter": {
+    icon: "✨",
+    title: "Aucune inspiration dans cette catégorie",
+    subtitle: "Change de filtre ou explore une autre vue de ton jardin",
+  },
+  "favorites": {
+    icon: "⭐",
+    title: "Aucun favori pour le moment",
+    subtitle: "Marque tes inspirations préférées pour les retrouver ici",
+  },
+  "archives": {
+    icon: "📦",
+    title: "Aucune inspiration archivée",
+    subtitle: "Les inspirations que tu archives seront conservées ici",
+  },
+};
 
-  const emoji = isArchiveView ? "📦" : isGardenView && !hasInspirations ? "🌿" : "🌱";
-
+function DashboardEmptyState({ kind, onAdd }: { kind: EmptyKind; onAdd: () => void }) {
+  const { icon, title, subtitle, showCta } = EMPTY_CONFIGS[kind];
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-20 h-20 bg-garden-green-muted dark:bg-white/5 rounded-full flex items-center justify-center mb-6 text-3xl">
-        {emoji}
-      </div>
-      <h2 className="text-display-sm font-bold text-garden-black dark:text-white mb-3">{title}</h2>
-      <p className="font-sans font-extralight text-garden-text-muted dark:text-white/50 max-w-xs leading-relaxed mb-8">
-        {subtitle}
-      </p>
-      {!hasInspirations && !isArchiveView && (
-        <button onClick={onAdd} className="btn-primary">
-          Planter une graine
-        </button>
-      )}
-    </div>
+    <EmptyState
+      icon={icon}
+      title={title}
+      subtitle={subtitle}
+      cta={showCta ? { label: "Planter une graine", onClick: onAdd } : undefined}
+    />
   );
 }

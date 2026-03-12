@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/lib/contexts/ToastContext";
 import { MergeTagsModal } from "./MergeTagsModal";
 import { TagPreviewModal } from "./TagPreviewModal";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -308,12 +309,19 @@ export function TagsClient({ initialInspirations }: TagsClientProps) {
       {/* Table */}
       <div className="flex-1 overflow-y-auto px-8 pb-8">
         {filteredTags.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <span className="text-4xl mb-3">🏷️</span>
-            <p className="font-mono text-sm text-garden-text-muted dark:text-gray-400">
-              {search ? "Aucun tag correspondant" : "Aucun tag pour l'instant"}
-            </p>
-          </div>
+          search.trim() ? (
+            <EmptyState
+              icon="🔍"
+              title="Aucun tag correspondant"
+              subtitle="Essaie avec un autre mot-clé"
+            />
+          ) : (
+            <EmptyState
+              icon="🏷️"
+              title="Aucun tag créé"
+              subtitle="Les tags apparaîtront ici quand tu commenceras à organiser tes inspirations"
+            />
+          )
         ) : (
           <table className="w-full border-collapse">
             <thead>

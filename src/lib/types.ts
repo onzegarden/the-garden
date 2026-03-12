@@ -21,6 +21,9 @@ export interface Inspiration {
   tags: string[];
   is_favorite: boolean;
   is_archived: boolean;
+  is_shared: boolean;
+  share_token: string | null;
+  position: number;
   garden_id: string | null;
   created_at: string;
   updated_at: string;

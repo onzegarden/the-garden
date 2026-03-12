@@ -5,6 +5,7 @@ import type { Inspiration } from "@/lib/types";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { Tag } from "@/components/ui/Tag";
 import { formatRelativeDate, truncate, extractDomain } from "@/lib/utils";
+import { Highlight } from "@/components/ui/Highlight";
 
 interface InspirationCardProps {
   inspiration: Inspiration;
@@ -12,6 +13,7 @@ interface InspirationCardProps {
   onFavorite: (val: boolean) => void;
   onTagClick?: (tag: string) => void;
   activeTagFilter?: string | null;
+  highlightQuery?: string;
 }
 
 export function InspirationCard({
@@ -20,6 +22,7 @@ export function InspirationCard({
   onFavorite,
   onTagClick,
   activeTagFilter,
+  highlightQuery = "",
 }: InspirationCardProps) {
   const { type, title, notes, tags, is_favorite, created_at, content_url, thumbnail_url, source_url } =
     inspiration;
@@ -69,7 +72,7 @@ export function InspirationCard({
       {type === "text" && !previewUrl && (
         <div className="px-4 pt-4 pb-2">
           <p className="font-sans font-extralight text-garden-black dark:text-white/80 text-sm leading-relaxed line-clamp-4">
-            {truncate(content_url ?? "", 280)}
+            <Highlight text={truncate(content_url ?? "", 280)} query={highlightQuery} />
           </p>
         </div>
       )}
@@ -81,7 +84,7 @@ export function InspirationCard({
             <TypeBadge type={type} />
             {source_url && (
               <span className="font-mono text-[10px] text-garden-text-muted dark:text-white/40">
-                {extractDomain(source_url)}
+                <Highlight text={extractDomain(source_url)} query={highlightQuery} />
               </span>
             )}
           </div>
@@ -98,13 +101,13 @@ export function InspirationCard({
 
         {title && (
           <h3 className="font-sans font-bold text-garden-black dark:text-white text-sm mb-1 leading-snug line-clamp-2">
-            {title}
+            <Highlight text={title} query={highlightQuery} />
           </h3>
         )}
 
         {notes && (
           <p className="font-sans font-extralight text-garden-text-muted dark:text-white/40 text-xs leading-relaxed line-clamp-2 mb-3">
-            {notes}
+            <Highlight text={notes} query={highlightQuery} />
           </p>
         )}
 
