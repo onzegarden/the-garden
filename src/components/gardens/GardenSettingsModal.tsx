@@ -209,15 +209,15 @@ export function GardenSettingsModal({
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <>
-      {/* Backdrop — covers the full page */}
-      <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
-
-      {/* Panel — centered over the entire viewport */}
+    /* Overlay — full viewport, centres the panel */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      {/* Panel */}
       <div
         className="
-          fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-          w-[calc(100%-2rem)] max-w-[480px] max-h-[90vh]
+          w-full max-w-[480px] max-h-[90vh]
           bg-white rounded-[20px] shadow-2xl flex flex-col overflow-hidden
           animate-fade-up
         "
@@ -461,6 +461,6 @@ export function GardenSettingsModal({
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
