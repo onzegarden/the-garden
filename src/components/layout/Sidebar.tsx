@@ -227,6 +227,8 @@ export function Sidebar({ user }: SidebarProps) {
   const {
     sidebarExpanded: expanded,
     toggleSidebar,
+    mobileSidebarOpen,
+    setMobileSidebarOpen,
     activeView,
     setActiveView,
     selectedGardenId,
@@ -237,6 +239,9 @@ export function Sidebar({ user }: SidebarProps) {
     removeGarden,
     profile,
   } = useDashboard();
+
+  // Close mobile sidebar on any nav action
+  const closeOnMobile = useCallback(() => setMobileSidebarOpen(false), [setMobileSidebarOpen]);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -329,46 +334,55 @@ export function Sidebar({ user }: SidebarProps) {
   };
 
   // ── Width classes ────────────────────────────────────────────
-  const W = expanded ? "w-[240px]" : "w-[60px]";
+  // Mobile: always full-width (240px). Desktop: follows expanded state.
+  const W = expanded ? "md:w-[240px]" : "md:w-[60px]";
 
   return (
     <aside
       className={`
-        fixed top-0 left-0 h-screen z-30 flex flex-col
+        fixed top-0 left-0 h-screen z-40 flex flex-col
         bg-garden-green dark:bg-gray-900 border-r border-white/10 dark:border-white/5
-        ${W} transition-all duration-200 ease-in-out overflow-hidden
+        w-[240px] ${W}
+        transition-all duration-200 ease-in-out overflow-hidden
+        ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
       `}
     >
       {/* ── Header: toggle + logo ────────────────────────────── */}
       <div className="flex items-center px-3 py-4 shrink-0 min-h-[64px]">
-        {expanded && (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Leaf mark */}
-            <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/10 shrink-0">
-              <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-garden-yellow" />
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2 10C2 10 3 4 9 2C9 2 9 8 2 10Z" fill="white" opacity="0.9" />
-                <path d="M9 2L2 10" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
-              </svg>
-            </div>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Leaf mark */}
+          <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/10 shrink-0">
+            <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-garden-yellow" />
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 10C2 10 3 4 9 2C9 2 9 8 2 10Z" fill="white" opacity="0.9" />
+              <path d="M9 2L2 10" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+            </svg>
+          </div>
+          {(expanded || mobileSidebarOpen) && (
             <span className="font-sans font-bold text-white text-sm tracking-tight truncate">
               The Garden
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Toggle button */}
+        {/* Mobile: close button (×). Desktop: expand/collapse (←/→). */}
         <button
-          onClick={toggleSidebar}
+          onClick={() => {
+            if (mobileSidebarOpen) {
+              setMobileSidebarOpen(false);
+            } else {
+              toggleSidebar();
+            }
+          }}
           className={`
-            flex items-center justify-center w-7 h-7 rounded-card
+            flex items-center justify-center w-11 h-11 rounded-card
             text-white/50 hover:text-white hover:bg-white/10
             transition-all duration-150 shrink-0 font-mono text-base
-            ${!expanded ? "mx-auto" : "ml-auto"}
+            ${!expanded && !mobileSidebarOpen ? "mx-auto" : "ml-auto"}
           `}
-          aria-label={expanded ? "Réduire la sidebar" : "Ouvrir la sidebar"}
+          aria-label={mobileSidebarOpen ? "Fermer le menu" : expanded ? "Réduire la sidebar" : "Ouvrir la sidebar"}
         >
-          {expanded ? "←" : "→"}
+          {mobileSidebarOpen ? "×" : expanded ? "←" : "→"}
         </button>
       </div>
 
@@ -381,65 +395,69 @@ export function Sidebar({ user }: SidebarProps) {
         <NavItem
           icon="🏠"
           label="Mon Jardin"
-          expanded={expanded}
+          expanded={expanded || mobileSidebarOpen}
           active={!needsNav && activeView === "all" && selectedGardenId === null}
           onClick={() => {
             setActiveView("all");
             setSelectedGardenId(null);
             if (needsNav) router.push("/dashboard");
+            closeOnMobile();
           }}
         />
         <NavItem
           icon="🔍"
           label="Recherche"
-          expanded={expanded}
+          expanded={expanded || mobileSidebarOpen}
           active={!needsNav && activeView === "search"}
           onClick={() => {
             setActiveView("search");
             if (needsNav) router.push("/dashboard");
+            closeOnMobile();
           }}
         />
         <NavItem
           icon="⭐"
           label="Favoris"
-          expanded={expanded}
+          expanded={expanded || mobileSidebarOpen}
           active={!needsNav && activeView === "favorites"}
           onClick={() => {
             setActiveView("favorites");
             setSelectedGardenId(null);
             if (needsNav) router.push("/dashboard");
+            closeOnMobile();
           }}
         />
         <NavItem
           icon="📦"
           label="Archives"
-          expanded={expanded}
+          expanded={expanded || mobileSidebarOpen}
           active={!needsNav && activeView === "archives"}
           onClick={() => {
             setActiveView("archives");
             setSelectedGardenId(null);
             if (needsNav) router.push("/dashboard");
+            closeOnMobile();
           }}
         />
         <NavItem
           icon="🏷️"
           label="Tags"
-          expanded={expanded}
+          expanded={expanded || mobileSidebarOpen}
           active={isOnTagsPage}
-          onClick={() => router.push("/dashboard/tags")}
+          onClick={() => { router.push("/dashboard/tags"); closeOnMobile(); }}
         />
         <NavItem
           icon="📓"
           label="Journal"
-          expanded={expanded}
+          expanded={expanded || mobileSidebarOpen}
           active={isOnJournalPage}
-          onClick={() => router.push("/dashboard/journal")}
+          onClick={() => { router.push("/dashboard/journal"); closeOnMobile(); }}
         />
 
         {/* Separator + section label */}
         <div className="mt-3 mb-1.5 shrink-0">
           <div className="h-px bg-white/10 mx-1" />
-          {expanded && (
+          {(expanded || mobileSidebarOpen) && (
             <p className="font-mono text-[10px] text-white/30 uppercase tracking-widest px-2 mt-2">
               Mes jardins
             </p>
@@ -452,13 +470,14 @@ export function Sidebar({ user }: SidebarProps) {
             key={garden.id}
             garden={garden}
             active={!needsNav && selectedGardenId === garden.id}
-            expanded={expanded}
+            expanded={expanded || mobileSidebarOpen}
             autoEdit={garden.id === pendingRenameId}
             onAutoEditDone={() => setPendingRenameId(null)}
             onClick={() => {
               setSelectedGardenId(garden.id);
               setActiveView("all");
               if (needsNav) router.push("/dashboard");
+              closeOnMobile();
             }}
             onRename={handleRenameGarden}
             onDelete={handleDeleteGarden}
@@ -486,7 +505,7 @@ export function Sidebar({ user }: SidebarProps) {
             <span className="shrink-0 w-5 flex items-center justify-center text-base font-mono">
               {creatingGarden ? "…" : "+"}
             </span>
-            {expanded && (
+            {(expanded || mobileSidebarOpen) && (
               <span className="font-sans text-sm truncate">
                 {creatingGarden ? "Création…" : "Nouveau jardin"}
               </span>
@@ -502,7 +521,7 @@ export function Sidebar({ user }: SidebarProps) {
           {/* Profile button (avatar + email) */}
           <SidebarTooltip label="Mon profil">
             <button
-              onClick={() => router.push("/dashboard/profile")}
+              onClick={() => { router.push("/dashboard/profile"); closeOnMobile(); }}
               className={`
                 flex items-center gap-2.5 flex-1 min-w-0 px-2 py-1.5 rounded-card
                 transition-all duration-150
@@ -528,17 +547,17 @@ export function Sidebar({ user }: SidebarProps) {
                   <span>{initials}</span>
                 )}
               </div>
-              {expanded && (
+              {(expanded || mobileSidebarOpen) && (
                 <p className="font-mono text-[11px] truncate flex-1 text-left">{displayName}</p>
               )}
             </button>
           </SidebarTooltip>
 
           {/* Logout button */}
-          {expanded ? (
+          {(expanded || mobileSidebarOpen) ? (
             <button
               onClick={handleLogout}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-card text-white/40 hover:text-white hover:bg-white/10 transition-all duration-150 font-mono text-sm"
+              className="shrink-0 w-11 h-11 flex items-center justify-center rounded-card text-white/40 hover:text-white hover:bg-white/10 transition-all duration-150 font-mono text-sm"
               title="Déconnexion"
               aria-label="Se déconnecter"
             >

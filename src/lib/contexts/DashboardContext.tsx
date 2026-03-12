@@ -18,6 +18,10 @@ interface DashboardContextValue {
   setSidebarExpanded: (v: boolean) => void;
   toggleSidebar: () => void;
 
+  // Mobile sidebar overlay
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (v: boolean) => void;
+
   // Active view / garden
   activeView: SidebarView;
   setActiveView: (v: SidebarView) => void;
@@ -48,6 +52,7 @@ export function DashboardProvider({
   initialProfile?: Profile | null;
 }) {
   const [sidebarExpanded, setSidebarExpandedRaw] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<SidebarView>("all");
   const [selectedGardenId, setSelectedGardenId] = useState<string | null>(null);
   const [gardens, setGardens] = useState<Garden[]>(initialGardens);
@@ -90,6 +95,8 @@ export function DashboardProvider({
         sidebarExpanded,
         setSidebarExpanded,
         toggleSidebar,
+        mobileSidebarOpen,
+        setMobileSidebarOpen,
         activeView,
         setActiveView,
         selectedGardenId,

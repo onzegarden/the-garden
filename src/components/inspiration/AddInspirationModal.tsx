@@ -288,7 +288,7 @@ export function AddInspirationModal({ onClose, onAdd, defaultGardenId, existingT
   // ── Render ────────────────────────────────────────────────────
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4"
       aria-hidden="false"
     >
       {/* Backdrop */}
@@ -301,10 +301,14 @@ export function AddInspirationModal({ onClose, onAdd, defaultGardenId, existingT
         role="dialog"
         aria-modal="true"
         aria-label="Ajouter une inspiration"
-        className="relative w-full max-w-lg animate-scale-in max-h-[90vh] flex flex-col"
+        className="relative w-full sm:max-w-lg animate-scale-in max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-white dark:bg-gray-900 rounded-card border border-garden-border dark:border-white/10 shadow-modal overflow-hidden flex flex-col">
+        <div className="bg-white dark:bg-gray-900 rounded-t-[20px] sm:rounded-card border border-garden-border dark:border-white/10 shadow-modal overflow-hidden flex flex-col">
+          {/* Mobile drag handle */}
+          <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
+            <div className="w-10 h-1 bg-garden-border dark:bg-white/20 rounded-full" />
+          </div>
 
           {/* ── Header ─────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-garden-border dark:border-white/10 shrink-0">
@@ -312,7 +316,7 @@ export function AddInspirationModal({ onClose, onAdd, defaultGardenId, existingT
             <button
               type="button"
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-card hover:bg-garden-green-muted dark:hover:bg-white/5 text-garden-text-muted dark:text-white/50 hover:text-garden-black dark:hover:text-white transition-all duration-200"
+              className="w-11 h-11 flex items-center justify-center rounded-card hover:bg-garden-green-muted dark:hover:bg-white/5 text-garden-text-muted dark:text-white/50 hover:text-garden-black dark:hover:text-white transition-all duration-200 text-xl"
               aria-label="Fermer"
             >
               ×
@@ -333,7 +337,7 @@ export function AddInspirationModal({ onClose, onAdd, defaultGardenId, existingT
                     setOgPreview(null);
                     lastFetchedUrl.current = "";
                   }}
-                  className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-card border text-xs font-mono transition-all duration-200
+                  className={`flex-1 flex flex-col items-center gap-1 py-2.5 sm:py-2 rounded-card border text-xs font-mono transition-all duration-200
                     ${
                       type === opt.value
                         ? "bg-garden-green text-white border-garden-green"

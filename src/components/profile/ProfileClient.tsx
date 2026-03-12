@@ -378,7 +378,7 @@ export function ProfileClient({ user, profile, stats }: ProfileClientProps) {
         <form onSubmit={handleSaveInfo} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="font-mono text-xs text-garden-text-muted dark:text-white/50 uppercase tracking-wide">
-              Nom d'affichage
+              Nom d&apos;affichage
             </label>
             <input
               type="text"
@@ -513,7 +513,7 @@ export function ProfileClient({ user, profile, stats }: ProfileClientProps) {
           {/* Accent color */}
           <div className="flex flex-col gap-3">
             <p className="font-sans font-medium text-garden-black dark:text-white text-sm">
-              Couleur d'accent
+              Couleur d&apos;accent
             </p>
             <div className="flex gap-2.5 flex-wrap">
               {ACCENT_COLORS.map((c) => (

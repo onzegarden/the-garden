@@ -64,6 +64,10 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateX(24px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
+        "slide-up": {
+          "0%": { opacity: "0", transform: "translateY(100%)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 300ms ease forwards",
@@ -71,6 +75,7 @@ const config: Config = {
         "scale-in": "scale-in 250ms ease forwards",
         "backdrop-in": "backdrop-in 200ms ease forwards",
         "slide-in": "slide-in 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "slide-up": "slide-up 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
       },
     },
   },

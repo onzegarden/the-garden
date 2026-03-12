@@ -163,7 +163,7 @@ export function InspirationDetail({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-card hover:bg-garden-green-muted dark:hover:bg-white/5 text-garden-text-muted dark:text-white/50 hover:text-garden-black dark:hover:text-white transition-all duration-200"
+            className="w-11 h-11 flex items-center justify-center rounded-card hover:bg-garden-green-muted dark:hover:bg-white/5 text-garden-text-muted dark:text-white/50 hover:text-garden-black dark:hover:text-white transition-all duration-200 text-xl"
             aria-label="Fermer"
           >
             ×
@@ -371,7 +371,7 @@ export function InspirationDetail({
 
         {/* Footer actions */}
         {!editing && (
-          <div className="px-6 py-4 border-t border-garden-border dark:border-white/10 flex items-center justify-between shrink-0">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-garden-border dark:border-white/10 flex items-center justify-between shrink-0 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onFavorite(inspiration.id, !inspiration.is_favorite)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef, forwardRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { Inspiration, FilterKind, SortKind } from "@/lib/types";
 import { useDashboard } from "@/lib/contexts/DashboardContext";
 import { useToast } from "@/lib/contexts/ToastContext";
@@ -222,7 +222,7 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
             </p>
           </div>
           {activeView !== "archives" && (
-            <button onClick={() => setShowAdd(true)} className="btn-primary shrink-0">
+            <button onClick={() => setShowAdd(true)} className="hidden sm:block btn-primary shrink-0">
               + Planter une graine
             </button>
           )}
@@ -289,6 +289,17 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* ── Mobile FAB ── */}
+      {activeView !== "archives" && (
+        <button
+          onClick={() => setShowAdd(true)}
+          className="sm:hidden fixed bottom-safe-6 right-6 z-20 w-14 h-14 bg-garden-green dark:bg-garden-green text-white rounded-full shadow-lg flex items-center justify-center text-2xl font-light leading-none active:scale-95 transition-transform"
+          aria-label="Planter une graine"
+        >
+          +
+        </button>
       )}
 
       {showAdd && (

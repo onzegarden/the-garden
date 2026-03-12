@@ -146,6 +146,15 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Safe-area inset helpers for notched phones */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .bottom-safe-6 {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ── Toast animations ───────────────────────────────────────────────────────── */
