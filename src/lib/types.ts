@@ -6,6 +6,8 @@ export interface Garden {
   name: string;
   cover_url: string | null;
   emoji: string;
+  is_shared: boolean;
+  share_token: string | null;
   created_at: string;
 }
 
@@ -21,8 +23,6 @@ export interface Inspiration {
   tags: string[];
   is_favorite: boolean;
   is_archived: boolean;
-  is_shared: boolean;
-  share_token: string | null;
   position: number;
   garden_id: string | null;
   created_at: string;

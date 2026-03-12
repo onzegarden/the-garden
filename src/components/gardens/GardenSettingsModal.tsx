@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, useCallback, type ChangeEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Garden } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -63,6 +63,16 @@ export function GardenSettingsModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // ── Share state ────────────────────────────────────────────────
+  const [isShared, setIsShared] = useState(garden.is_shared ?? false);
+  const [shareToken, setShareToken] = useState<string | null>(garden.share_token ?? null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [copyDone, setCopyDone] = useState(false);
+
+  const shareUrl = shareToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${shareToken}`
+    : null;
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close on Escape
@@ -95,6 +105,55 @@ export function GardenSettingsModal({
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  // ── Share ────────────────────────────────────────────────────────────────────
+  const handleEnableShare = useCallback(async () => {
+    setShareLoading(true);
+    const supabase = createClient();
+    const token = shareToken ?? crypto.randomUUID().replace(/-/g, "");
+    const { data, error } = await supabase
+      .from("gardens")
+      .update({ is_shared: true, share_token: token })
+      .eq("id", garden.id)
+      .select()
+      .single();
+    setShareLoading(false);
+    if (data) {
+      setIsShared(true);
+      setShareToken(token);
+      onUpdate(data as Garden);
+    } else if (error) {
+      toast.error("Impossible d'activer le partage");
+    }
+  }, [garden.id, shareToken, onUpdate, toast]);
+
+  const handleDisableShare = useCallback(async () => {
+    setShareLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("gardens")
+      .update({ is_shared: false })
+      .eq("id", garden.id)
+      .select()
+      .single();
+    setShareLoading(false);
+    if (data) {
+      setIsShared(false);
+      onUpdate(data as Garden);
+      toast.success("Partage désactivé");
+    } else if (error) {
+      toast.error("Impossible de désactiver le partage");
+    }
+  }, [garden.id, onUpdate, toast]);
+
+  const handleCopyLink = useCallback(() => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 2000);
+      toast.success("Lien copié 🌱");
+    });
+  }, [shareUrl, toast]);
 
   // ── Save ────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -291,6 +350,58 @@ export function GardenSettingsModal({
               maxLength={80}
               onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
             />
+          </div>
+
+          {/* ── Partage ───────────────────────────────────────── */}
+          <div className="flex flex-col gap-3">
+            <p className="font-mono text-xs text-garden-text-muted uppercase tracking-wide">
+              Partage
+            </p>
+
+            {!isShared ? (
+              <button
+                type="button"
+                onClick={handleEnableShare}
+                disabled={shareLoading}
+                className="btn-secondary text-sm py-2.5 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {shareLoading ? "Activation…" : "🔗 Rendre ce jardin public"}
+              </button>
+            ) : (
+              <div className="flex flex-col gap-3 p-4 bg-garden-green-muted rounded-card animate-fade-in">
+                <p className="font-mono text-[10px] text-garden-text-muted uppercase tracking-widest">
+                  Lien de partage
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl ?? ""}
+                    className="input-base text-xs flex-1 select-all cursor-pointer"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className={`btn-primary shrink-0 text-xs transition-all ${copyDone ? "!bg-garden-yellow !text-garden-black" : ""}`}
+                  >
+                    {copyDone ? "Copié ✓" : "Copier"}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-sans font-light text-[11px] text-garden-text-muted leading-relaxed">
+                    Ce jardin est visible par toute personne ayant le lien.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDisableShare}
+                    disabled={shareLoading}
+                    className="font-mono text-[10px] text-red-400 hover:text-red-600 hover:underline shrink-0 transition-colors disabled:opacity-50"
+                  >
+                    Désactiver
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Danger zone ───────────────────────────────────── */}
