@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Inspiration, InspirationKind } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -151,11 +152,13 @@ export function TagPreviewModal({
                   >
                     {/* Thumbnail / Type placeholder */}
                     {insp.thumbnail_url ? (
-                      <div className="aspect-video bg-garden-green-light overflow-hidden shrink-0">
-                        <img
+                      <div className="relative aspect-video bg-garden-green-light overflow-hidden shrink-0">
+                        <Image
                           src={insp.thumbnail_url}
                           alt={insp.title ?? ""}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="120px"
                         />
                       </div>
                     ) : (

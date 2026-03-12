@@ -210,7 +210,7 @@ export default async function SharePage({ params }: Props) {
             <span className="text-garden-green dark:text-garden-yellow/80 font-medium">
               The Garden
             </span>{" "}
-            — ton espace d'inspirations cultivées.
+            — ton espace d&apos;inspirations cultivées.
           </p>
           <a
             href="/auth/signup"

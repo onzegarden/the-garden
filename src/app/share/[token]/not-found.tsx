@@ -23,10 +23,10 @@ export default function ShareNotFound() {
           🍂
         </span>
         <h1 className="font-sans font-bold text-garden-black dark:text-white text-xl mb-3">
-          Cette graine n'existe plus
+          Cette graine n&apos;existe plus
         </h1>
         <p className="font-sans font-extralight text-garden-text-muted dark:text-white/50 text-sm max-w-xs leading-relaxed mb-8">
-          Le lien de partage a peut-être été désactivé ou n'a jamais existé. Les
+          Le lien de partage a peut-être été désactivé ou n&apos;a jamais existé. Les
           jardins ont leur propre mémoire.
         </p>
         <Link
