@@ -7,6 +7,7 @@ import { useDashboard } from "@/lib/contexts/DashboardContext";
 import { useToast } from "@/lib/contexts/ToastContext";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
+import { GardenSettingsModal } from "@/components/gardens/GardenSettingsModal";
 
 // ─── Small helpers ───────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ interface GardenItemProps {
   onAutoEditDone?: () => void;
   onClick: () => void;
   onRename: (id: string, name: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onSettings: (garden: Garden) => void;
 }
 
 function GardenItem({
@@ -100,7 +101,7 @@ function GardenItem({
   onAutoEditDone,
   onClick,
   onRename,
-  onDelete,
+  onSettings,
 }: GardenItemProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(garden.name);
@@ -177,7 +178,19 @@ function GardenItem({
         {active && (
           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-garden-yellow rounded-r-full" />
         )}
-        <span className="shrink-0 text-sm">🌿</span>
+        {/* Avatar: cover photo or emoji */}
+        <span className="shrink-0 w-5 h-5 rounded-[4px] overflow-hidden flex items-center justify-center text-sm leading-none">
+          {garden.cover_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={garden.cover_url}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            garden.emoji ?? "🌿"
+          )}
+        </span>
         {expanded && (
           <>
             {editing ? (
@@ -196,18 +209,18 @@ function GardenItem({
                 {garden.name}
               </span>
             )}
-            {/* Delete button — appears on hover, hidden while editing */}
+            {/* Settings button — appears on hover, hidden while editing */}
             {!editing && hovering && (
               <button
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  await onDelete(garden.id);
+                  onSettings(garden);
                 }}
-                className="shrink-0 w-4 h-4 flex items-center justify-center text-white/30 hover:text-red-400 transition-colors text-xs ml-auto"
-                title="Supprimer ce jardin"
-                aria-label="Supprimer ce jardin"
+                className="shrink-0 w-5 h-5 flex items-center justify-center text-white/40 hover:text-white transition-colors text-xs ml-auto"
+                title="Paramètres du jardin"
+                aria-label="Paramètres du jardin"
               >
-                ×
+                ⚙️
               </button>
             )}
           </>
@@ -256,6 +269,9 @@ export function Sidebar({ user }: SidebarProps) {
 
   // ID of the garden that should auto-start rename (just created)
   const [pendingRenameId, setPendingRenameId] = useState<string | null>(null);
+
+  // Settings modal
+  const [settingsGarden, setSettingsGarden] = useState<Garden | null>(null);
 
   const email = user.email ?? "";
   const displayName = profile?.full_name || email;
@@ -310,20 +326,6 @@ export function Sidebar({ user }: SidebarProps) {
     [updateGarden, toast]
   );
 
-  const handleDeleteGarden = useCallback(
-    async (id: string) => {
-      const supabase = createClient();
-      const { error } = await supabase.from("gardens").delete().eq("id", id);
-      if (!error) {
-        removeGarden(id);
-        toast.success("Jardin supprimé");
-      } else {
-        console.error("[Garden] Delete failed:", error.message);
-        toast.error("Impossible de supprimer le jardin");
-      }
-    },
-    [removeGarden, toast]
-  );
 
   // ── Logout ──────────────────────────────────────────────────
   const handleLogout = async () => {
@@ -480,7 +482,7 @@ export function Sidebar({ user }: SidebarProps) {
               closeOnMobile();
             }}
             onRename={handleRenameGarden}
-            onDelete={handleDeleteGarden}
+            onSettings={(g) => setSettingsGarden(g)}
           />
         ))}
 
@@ -513,6 +515,23 @@ export function Sidebar({ user }: SidebarProps) {
           </button>
         </SidebarTooltip>
       </div>
+
+      {/* ── Garden settings modal ────────────────────────────── */}
+      {settingsGarden && (
+        <GardenSettingsModal
+          garden={settingsGarden}
+          user={user}
+          onClose={() => setSettingsGarden(null)}
+          onUpdate={(updated) => {
+            updateGarden(updated);
+            setSettingsGarden(null);
+          }}
+          onDelete={(id) => {
+            removeGarden(id);
+            setSettingsGarden(null);
+          }}
+        />
+      )}
 
       {/* ── Footer: user → profile ───────────────────────────── */}
       <div className="shrink-0">

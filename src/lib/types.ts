@@ -4,6 +4,8 @@ export interface Garden {
   id: string;
   user_id: string;
   name: string;
+  cover_url: string | null;
+  emoji: string;
   created_at: string;
 }
 

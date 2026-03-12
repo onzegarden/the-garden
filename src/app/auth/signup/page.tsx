@@ -14,6 +14,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
@@ -47,29 +48,71 @@ export default function SignupPage() {
 
     setSuccess(true);
     setLoading(false);
+  };
 
-    // If email confirmation is disabled in Supabase, redirect directly
-    setTimeout(() => {
-      router.push("/dashboard");
-      router.refresh();
-    }, 1500);
+  const handleResend = async () => {
+    setResendStatus("sending");
+    const supabase = createClient();
+    await supabase.auth.resend({ type: "signup", email });
+    setResendStatus("sent");
+    setTimeout(() => setResendStatus("idle"), 4000);
   };
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
-        <div className="text-center max-w-sm animate-scale-in">
-          <div className="w-16 h-16 bg-garden-green rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-2xl">🌱</span>
+      <div className="min-h-screen bg-white flex flex-col">
+        <nav className="px-6 py-6 border-b border-garden-border">
+          <Link href="/">
+            <GardenLogo />
+          </Link>
+        </nav>
+
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-sm animate-fade-up text-center">
+            {/* Icon */}
+            <div className="w-16 h-16 bg-garden-green-light rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-2xl">📬</span>
+            </div>
+
+            <h2 className="text-display-sm font-bold text-garden-black mb-3">
+              Vérifie ta boîte mail
+            </h2>
+            <p className="text-sm font-extralight text-garden-text-muted leading-relaxed mb-2">
+              On a envoyé un lien de confirmation à{" "}
+              <span className="font-normal text-garden-black">{email}</span>.
+            </p>
+            <p className="text-sm font-extralight text-garden-text-muted leading-relaxed mb-8">
+              Clique dessus pour activer ton compte Garden.
+            </p>
+
+            {/* CTA principal */}
+            <button
+              onClick={() => router.push("/auth/login")}
+              className="btn-primary w-full py-3 mb-3"
+            >
+              J&apos;ai confirmé mon email →
+            </button>
+
+            {/* Renvoyer */}
+            <button
+              onClick={handleResend}
+              disabled={resendStatus !== "idle"}
+              className="btn-secondary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resendStatus === "sending"
+                ? "Envoi en cours…"
+                : resendStatus === "sent"
+                ? "Email renvoyé ✓"
+                : "Renvoyer l'email"}
+            </button>
+
+            <p className="mt-6 text-xs font-mono text-garden-text-muted">
+              Vérifie aussi tes spams, au cas où.
+            </p>
           </div>
-          <h2 className="text-display-sm font-bold text-garden-black mb-3">
-            Ton jardin est planté !
-          </h2>
-          <p className="text-sm font-extralight text-garden-text-muted leading-relaxed">
-            Vérifie ta boîte mail pour confirmer ton compte, ou patiente un
-            instant…
-          </p>
         </div>
+
+        <div className="h-1 bg-garden-green" />
       </div>
     );
   }
