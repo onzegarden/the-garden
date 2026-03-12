@@ -209,26 +209,22 @@ export function GardenSettingsModal({
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+    <>
+      {/* Backdrop — covers the full page */}
+      <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
 
-      {/* Panel */}
+      {/* Panel — centered over the entire viewport */}
       <div
         className="
-          relative z-10 w-full sm:max-w-md bg-white rounded-t-[20px] sm:rounded-[20px]
-          shadow-2xl flex flex-col max-h-[90vh] overflow-hidden
-          animate-slide-up sm:animate-fade-up
+          fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+          w-[calc(100%-2rem)] max-w-[480px] max-h-[90vh]
+          bg-white rounded-[20px] shadow-2xl flex flex-col overflow-hidden
+          animate-fade-up
         "
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-garden-border shrink-0">
-          {/* Drag handle on mobile */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gray-200 sm:hidden" />
           <h2 className="font-sans font-bold text-garden-black text-base">
             Paramètres du jardin
           </h2>
@@ -465,6 +461,6 @@ export function GardenSettingsModal({
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

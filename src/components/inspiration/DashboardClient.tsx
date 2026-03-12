@@ -31,7 +31,11 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ initialInspirations }: DashboardClientProps) {
-  const { activeView, setActiveView, selectedGardenId, gardens } = useDashboard();
+  const { activeView, setActiveView, selectedGardenId, gardens, openGardenSettings } = useDashboard();
+  const selectedGarden = useMemo(
+    () => gardens.find((g) => g.id === selectedGardenId) ?? null,
+    [gardens, selectedGardenId]
+  );
   const toast = useToast();
 
   const [inspirations, setInspirations] = useState<Inspiration[]>(initialInspirations);
@@ -388,11 +392,24 @@ export function DashboardClient({ initialInspirations }: DashboardClientProps) {
               )}
             </p>
           </div>
-          {activeView !== "archives" && (
-            <button onClick={() => setShowAdd(true)} className="hidden sm:block btn-primary shrink-0">
-              + Planter une graine
-            </button>
-          )}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            {/* Settings button — visible only when a specific garden is selected */}
+            {selectedGarden && (
+              <button
+                onClick={() => openGardenSettings(selectedGarden)}
+                className="btn-ghost flex items-center gap-1.5"
+                title="Paramètres du jardin"
+              >
+                <span>⚙️</span>
+                <span>Paramètres</span>
+              </button>
+            )}
+            {activeView !== "archives" && (
+              <button onClick={() => setShowAdd(true)} className="btn-primary">
+                + Planter une graine
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Active tag filter banner */}

@@ -7,7 +7,6 @@ import { useDashboard } from "@/lib/contexts/DashboardContext";
 import { useToast } from "@/lib/contexts/ToastContext";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
-import { GardenSettingsModal } from "@/components/gardens/GardenSettingsModal";
 
 // ─── Small helpers ───────────────────────────────────────────────────────────
 
@@ -90,7 +89,6 @@ interface GardenItemProps {
   onAutoEditDone?: () => void;
   onClick: () => void;
   onRename: (id: string, name: string) => Promise<void>;
-  onSettings: (garden: Garden) => void;
 }
 
 function GardenItem({
@@ -101,11 +99,9 @@ function GardenItem({
   onAutoEditDone,
   onClick,
   onRename,
-  onSettings,
 }: GardenItemProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(garden.name);
-  const [hovering, setHovering] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep value in sync when garden.name changes (e.g. after server update)
@@ -172,8 +168,6 @@ function GardenItem({
             startEdit();
           }
         }}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
       >
         {active && (
           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-garden-yellow rounded-r-full" />
@@ -209,20 +203,6 @@ function GardenItem({
                 {garden.name}
               </span>
             )}
-            {/* Settings button — appears on hover, hidden while editing */}
-            {!editing && hovering && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSettings(garden);
-                }}
-                className="shrink-0 w-5 h-5 flex items-center justify-center text-white/40 hover:text-white transition-colors text-xs ml-auto"
-                title="Paramètres du jardin"
-                aria-label="Paramètres du jardin"
-              >
-                ⚙️
-              </button>
-            )}
           </>
         )}
       </div>
@@ -249,7 +229,6 @@ export function Sidebar({ user }: SidebarProps) {
     gardens,
     addGarden,
     updateGarden,
-    removeGarden,
     profile,
   } = useDashboard();
 
@@ -269,9 +248,6 @@ export function Sidebar({ user }: SidebarProps) {
 
   // ID of the garden that should auto-start rename (just created)
   const [pendingRenameId, setPendingRenameId] = useState<string | null>(null);
-
-  // Settings modal
-  const [settingsGarden, setSettingsGarden] = useState<Garden | null>(null);
 
   const email = user.email ?? "";
   const displayName = profile?.full_name || email;
@@ -325,7 +301,6 @@ export function Sidebar({ user }: SidebarProps) {
     },
     [updateGarden, toast]
   );
-
 
   // ── Logout ──────────────────────────────────────────────────
   const handleLogout = async () => {
@@ -482,7 +457,6 @@ export function Sidebar({ user }: SidebarProps) {
               closeOnMobile();
             }}
             onRename={handleRenameGarden}
-            onSettings={(g) => setSettingsGarden(g)}
           />
         ))}
 
@@ -515,23 +489,6 @@ export function Sidebar({ user }: SidebarProps) {
           </button>
         </SidebarTooltip>
       </div>
-
-      {/* ── Garden settings modal ────────────────────────────── */}
-      {settingsGarden && (
-        <GardenSettingsModal
-          garden={settingsGarden}
-          user={user}
-          onClose={() => setSettingsGarden(null)}
-          onUpdate={(updated) => {
-            updateGarden(updated);
-            setSettingsGarden(null);
-          }}
-          onDelete={(id) => {
-            removeGarden(id);
-            setSettingsGarden(null);
-          }}
-        />
-      )}
 
       {/* ── Footer: user → profile ───────────────────────────── */}
       <div className="shrink-0">

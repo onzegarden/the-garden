@@ -6,6 +6,7 @@ import { DashboardProvider, useDashboard } from "@/lib/contexts/DashboardContext
 import { ToastProvider } from "@/lib/contexts/ToastContext";
 import { ToastContainer } from "@/components/ui/Toast";
 import { Sidebar } from "./Sidebar";
+import { GardenSettingsModal } from "@/components/gardens/GardenSettingsModal";
 
 // ── Inner shell reads context for margin + mobile state ──────────
 function ShellInner({ children }: { children: React.ReactNode }) {
@@ -52,6 +53,27 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Garden settings portal — rendered outside sidebar to avoid transform clipping
+function GardenSettingsPortal({ user }: { user: User }) {
+  const { settingsGarden, closeGardenSettings, updateGarden, removeGarden } = useDashboard();
+  if (!settingsGarden) return null;
+  return (
+    <GardenSettingsModal
+      garden={settingsGarden}
+      user={user}
+      onClose={closeGardenSettings}
+      onUpdate={(updated) => {
+        updateGarden(updated);
+        closeGardenSettings();
+      }}
+      onDelete={(id) => {
+        removeGarden(id);
+        closeGardenSettings();
+      }}
+    />
+  );
+}
+
 // ── Public export ─────────────────────────────────────────────────
 export function DashboardShell({
   user,
@@ -69,6 +91,7 @@ export function DashboardShell({
       <DashboardProvider initialGardens={gardens} initialProfile={profile ?? null}>
         <Sidebar user={user} />
         <ShellInner>{children}</ShellInner>
+        <GardenSettingsPortal user={user} />
         <ToastContainer />
       </DashboardProvider>
     </ToastProvider>

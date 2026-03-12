@@ -38,6 +38,11 @@ interface DashboardContextValue {
   // Profile (shared between ProfileClient and Sidebar for real-time updates)
   profile: Profile | null;
   setProfile: (p: Profile) => void;
+
+  // Garden settings modal (opened from header or sidebar)
+  settingsGarden: Garden | null;
+  openGardenSettings: (g: Garden) => void;
+  closeGardenSettings: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -57,6 +62,7 @@ export function DashboardProvider({
   const [selectedGardenId, setSelectedGardenId] = useState<string | null>(null);
   const [gardens, setGardens] = useState<Garden[]>(initialGardens);
   const [profile, setProfile] = useState<Profile | null>(initialProfile);
+  const [settingsGarden, setSettingsGarden] = useState<Garden | null>(null);
 
   // Persist sidebar state in localStorage
   useEffect(() => {
@@ -89,6 +95,9 @@ export function DashboardProvider({
     setSelectedGardenId((curr) => (curr === id ? null : curr));
   }, []);
 
+  const openGardenSettings = useCallback((g: Garden) => setSettingsGarden(g), []);
+  const closeGardenSettings = useCallback(() => setSettingsGarden(null), []);
+
   return (
     <DashboardContext.Provider
       value={{
@@ -108,6 +117,9 @@ export function DashboardProvider({
         removeGarden,
         profile,
         setProfile,
+        settingsGarden,
+        openGardenSettings,
+        closeGardenSettings,
       }}
     >
       {children}
